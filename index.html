@@ -279,8 +279,12 @@
 
   <section class="card">
     <h2>🖼️ 2. Logo &amp; Footer Dokumen</h2>
-    <p class="hint" style="margin-bottom:12px">Nilai lalai diambil dari tab Tetapan. Ubah di sini
-      jika minit ini sahaja perlu logo atau footer yang berbeza.</p>
+    <div class="row-head">
+      <span class="hint" style="max-width:560px">Nilai ini disimpan bersama rekod minit, jadi minit
+        lama kekal dengan logo asalnya. Ubah di sini untuk minit ini sahaja, atau tekan butang di
+        sebelah untuk tarik semula logo &amp; footer terkini dari tab Tetapan.</span>
+      <button class="b-ghost b-sm" onclick="segarJenama()">↻ Guna Tetapan Terkini</button>
+    </div>
     <div class="chk">
       <input type="checkbox" id="chkLogo" data-bind="brand.paparLogo">
       <label for="chkLogo">Papar logo pada dokumen</label>
@@ -1140,6 +1144,22 @@ function normalLogo(url){
   if (m && url.indexOf('drive.google.com') > -1) return 'https://drive.google.com/uc?export=view&id=' + m[1];
   return url;
 }
+/** Tarik semula logo & footer dari Tetapan ke dalam rekod minit yang sedang dibuka. */
+function segarJenama(){
+  var b = S.brand;
+  b.logoUrl     = normalLogo(KONFIG.LOGO_URL || '');
+  b.logoTinggi  = KONFIG.LOGO_TINGGI || '70';
+  b.logoJajaran = KONFIG.LOGO_JAJARAN || 'tengah';
+  b.paparLogo   = ya(KONFIG.PAPAR_LOGO_DOKUMEN);
+  b.paparFooter = ya(KONFIG.PAPAR_FOOTER);
+  b.footerTeks  = KONFIG.FOOTER_TEKS || b.footerTeks;
+  b.footerJajaran = KONFIG.FOOTER_JAJARAN || 'tengah';
+  b.footerGaris = ya(KONFIG.FOOTER_GARIS);
+  isiMedan(); simpanDraf();
+  toast(S.id ? 'Dikemas kini. Tekan "Simpan ke Google Sheet" untuk kekalkan pada rekod ini.'
+             : 'Logo & footer dikemas kini dari Tetapan.');
+}
+
 function normalLogoMedan(el){
   var v = normalLogo(el.value);
   if (v !== el.value){ el.value = v; S.brand.logoUrl = v; simpanDraf(); }
@@ -1421,8 +1441,18 @@ function footerPratonton(){
     + 'margin:26pt 0 0 0;' + (S.brand.footerGaris ? 'border-top:1px solid #999;padding-top:4pt;' : '')
     + '">' + teks + '</p>';
 }
-function logoHtml(){
-  var b = S.brand, u = normalLogo(b.logoUrl);
+/** Nilai logo/footer terkini dari tab Tetapan (bukan dari rekod minit yang dibuka). */
+function jenamaKonfig(){
+  return {
+    logoUrl: normalLogo(KONFIG.LOGO_URL || ''),
+    logoTinggi: KONFIG.LOGO_TINGGI || '70',
+    logoJajaran: KONFIG.LOGO_JAJARAN || 'tengah',
+    paparLogo: ya(KONFIG.PAPAR_LOGO_DOKUMEN)
+  };
+}
+/** sumber = objek brand. Kosong bermakna guna brand rekod minit semasa (S.brand). */
+function logoHtml(sumber){
+  var b = sumber || S.brand, u = normalLogo(b.logoUrl);
   if (!b.paparLogo || !u) return '';
   var tinggi = Number(b.logoTinggi) || 70;
   return '<p style="text-align:'+jajar(b.logoJajaran)+';margin:0 0 8pt 0">'
@@ -1823,7 +1853,9 @@ function mbBuildDoc(){
 
   if (KONFIG.MB_KOD_DOKUMEN)
     h += '<p style="text-align:right;font-size:9pt;margin:0 0 10pt 0">'+esc(KONFIG.MB_KOD_DOKUMEN)+'</p>';
-  h += logoHtml();
+  // Dokumen maklum balas ialah dokumen tersendiri — logo diambil terus dari Tetapan
+  // semasa, bukan dari rekod minit yang kebetulan terbuka di tab Penjana.
+  h += logoHtml(jenamaKonfig());
   h += '<p style="text-align:center;font-weight:bold;font-size:12pt;margin:0 0 14pt 0">'
      + esc(KONFIG.MB_TAJUK_DOKUMEN || 'MAKLUM BALAS MINIT MESYUARAT') + '</p>';
 
