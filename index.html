@@ -21,7 +21,7 @@
    Kedua-duanya mesti sepadan, jika tidak sambungan akan ditolak.
    ══════════════════════════════════════════════════════════════════════════════════ */
 
-   var MACRO_URL = "https://script.google.com/macros/s/AKfycbw0ArFSObPqvoPD767L1QEYEuigNm4kUP4e5as_ayFfTCxgtFZxAcrEVUzUroe-U1IC/exec";
+   var MACRO_URL = "https://script.google.com/macros/s/AKfycbwtNAD_Y0mPUk8CUgxVMSgkpY4ET7_ql_AwUiYJbEw8Ey9EEU3th3QpO07LMGpOwAPJ/exec";
    var KUNCI_API = "minit";
 
 /* ══════════════════════════════════════════════════════════════════════════════════
@@ -138,9 +138,10 @@
   .tools input[type=text]{max-width:280px} .tools select{max-width:170px}
   .tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
   table.data{width:100%;border-collapse:collapse;font-size:12.5px;min-width:1020px}
-  table.data td:first-child,table.data td:nth-child(3){white-space:nowrap}
-  table.data th:nth-child(2),table.data td:nth-child(2){min-width:240px}
-  table.data th:nth-child(4),table.data td:nth-child(4){min-width:195px}
+  table.tbl-rekod td:first-child,table.tbl-rekod td:nth-child(3){white-space:nowrap}
+  table.tbl-rekod th:nth-child(2),table.tbl-rekod td:nth-child(2){min-width:240px}
+  table.tbl-rekod th:nth-child(4),table.tbl-rekod td:nth-child(4){min-width:195px}
+  table.tbl-mb td.perkara{min-width:250px;max-width:360px}
   table.data th{background:#f8fafc;text-align:left;padding:10px 12px;font-size:11px;
       text-transform:uppercase;letter-spacing:.3px;color:#475569;border-bottom:1px solid var(--line);
       white-space:nowrap;cursor:pointer;user-select:none}
@@ -236,6 +237,7 @@
 <nav class="tabs">
   <button class="on" data-view="penjana">📝 Penjana Minit</button>
   <button data-view="rekod">📚 Rekod Minit</button>
+  <button data-view="mb" id="tabMB" style="display:none">✅ Maklum Balas</button>
   <button data-view="dash">📊 Dashboard</button>
   <button data-view="tetapan">⚙️ Tetapan</button>
 </nav>
@@ -403,7 +405,7 @@
       <span class="hint" id="kiraRekod"></span>
     </div>
     <div class="tbl-wrap">
-      <table class="data">
+      <table class="data tbl-rekod">
         <thead><tr>
           <th onclick="susun('simpan')">Tarikh Simpan</th>
           <th onclick="susun('tajuk')">Tajuk Mesyuarat</th>
@@ -418,6 +420,25 @@
       </table>
     </div>
     <div class="pager" id="pager"></div>
+  </div>
+</div>
+
+<!-- ============================ MAKLUM BALAS ============================ -->
+<div class="view" id="v-mb">
+  <div class="card">
+    <h2>✅ Maklum Balas Minit Mesyuarat</h2>
+    <p class="hint" style="margin-bottom:12px">Pilih minit yang telah dijana. Sistem akan tarik
+      semua perkara yang ada Tindakan dan senaraikannya untuk diisi status pelaksanaan.
+      Satu perkara dengan beberapa nama akan dipecahkan kepada satu baris setiap nama.</p>
+    <div class="tools">
+      <select id="mbMinit" onchange="mbTukarMinit()" style="max-width:420px">
+        <option value="">— Pilih minit rujukan —</option>
+      </select>
+      <button class="b-blue b-sm" onclick="mbJana()">↻ Tarik / Segar Semula Item</button>
+      <span class="spacer"></span>
+      <span class="hint" id="mbKira"></span>
+    </div>
+    <div id="mbKandungan"></div>
   </div>
 </div>
 
@@ -496,6 +517,47 @@
       <div class="grid2">
         <div class="field"><label>Baris Lalai Jadual Baharu</label><input type="text" id="k_JADUAL_BARIS_LALAI" placeholder="3"></div>
         <div class="field"><label>Lajur Lalai Jadual Baharu</label><input type="text" id="k_JADUAL_LAJUR_LALAI" placeholder="3"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>✅ Modul Maklum Balas <span class="hint" style="text-transform:none;letter-spacing:0;font-weight:400">(pilihan)</span></h2>
+      <p class="hint" style="margin-bottom:12px">Modul penjejakan tindakan selepas mesyuarat.
+        Bila dihidupkan, tab <b>Maklum Balas</b> muncul dalam aplikasi dan tab
+        <b>Maklum Balas</b> dicipta dalam Google Sheet. Bila dimatikan, semuanya tersembunyi
+        dan data lama kekal tidak diusik.</p>
+      <div class="grid2">
+        <div class="field"><label>Hidupkan Modul</label>
+          <select id="k_MODUL_MAKLUM_BALAS" onchange="togelModulMB()">
+            <option>TIDAK</option><option>YA</option></select></div>
+        <div class="field"><label>Papar Lajur Muka Surat</label>
+          <select id="k_MB_PAPAR_MUKA_SURAT"><option>YA</option><option>TIDAK</option></select></div>
+      </div>
+      <div id="mbTetapanLanjut">
+        <div class="grid2">
+          <div class="field"><label>Tajuk Dokumen Maklum Balas</label>
+            <input type="text" id="k_MB_TAJUK_DOKUMEN" placeholder="MAKLUM BALAS MINIT MESYUARAT"></div>
+          <div class="field"><label>Kod Borang (pilihan)</label>
+            <input type="text" id="k_MB_KOD_DOKUMEN" placeholder="Cth: PK07 — Pengurusan Mesyuarat"></div>
+        </div>
+        <div class="field"><label>Senarai Status (pisah dengan koma)</label>
+          <input type="text" id="k_MB_SENARAI_STATUS"
+                 placeholder="Telah dilaksanakan, Dalam tindakan, Belum dilaksanakan"></div>
+        <div class="field"><label>Status Yang Dikira Selesai (pisah dengan koma)</label>
+          <input type="text" id="k_MB_STATUS_SELESAI" placeholder="Telah dilaksanakan"></div>
+        <div class="field"><label>Nilai Tindakan Yang Diabaikan (bukan item tindakan)</label>
+          <input type="text" id="k_MB_ABAI_TINDAKAN" placeholder="Maklumat, Makluman">
+          <p class="hint" style="margin-top:6px">Perkara yang Tindakannya salah satu nilai di atas
+            tidak akan masuk senarai maklum balas.</p></div>
+        <div class="grid3">
+          <div class="field"><label>Tajuk Lajur Muka Surat</label><input type="text" id="k_MB_IST_MUKA_SURAT"></div>
+          <div class="field"><label>Tajuk Lajur Para</label><input type="text" id="k_MB_IST_PARA"></div>
+          <div class="field"><label>Tajuk Lajur Perkara</label><input type="text" id="k_MB_IST_PERKARA"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Tajuk Lajur Tindakan</label><input type="text" id="k_MB_IST_TINDAKAN"></div>
+          <div class="field"><label>Tajuk Lajur Maklum Balas</label><input type="text" id="k_MB_IST_MAKLUM_BALAS"></div>
+        </div>
       </div>
     </div>
 
@@ -951,6 +1013,7 @@ function tukarView(nama){
   document.getElementById('toolbar').style.display = (nama === 'penjana') ? 'flex' : 'none';
   window.scrollTo(0,0);
   if (nama === 'rekod') muatRekod();
+  if (nama === 'mb') mbBuka();
   if (nama === 'dash'){ kunciAdmin('dash'); if (ADMIN) muatStatistik(); }
   if (nama === 'tetapan'){ kunciAdmin('tetapan'); if (ADMIN) isiTetapan(); }
 }
@@ -1023,6 +1086,7 @@ function pakaiJenama(){
   document.getElementById('appFoot').textContent =
     (KONFIG.FOOTER_APLIKASI || 'Sistem Minit Mesyuarat') + ' · v' + (KONFIG.__versi || '4.0');
 
+  document.getElementById('tabMB').style.display = modulMB() ? '' : 'none';
   document.getElementById('blokTidakHadir').style.display = ciri('BENARKAN_TIDAK_HADIR') ? '' : 'none';
   document.getElementById('hintAgenda').textContent = 'Tambah Agenda Utama (1.0, 2.0) dan Sub-Perkara (1.1)'
     + (ciri('BENARKAN_SUB_PERKARA') ? ' dan Sub-Sub-Perkara (1.1.1)' : '')
@@ -1238,6 +1302,7 @@ function renderAgenda(){
   var adaJadual = ciri('BENARKAN_JADUAL');
   var adaSub = ciri('BENARKAN_SUB_PERKARA');
   var lblTindakan = (KONFIG.IST_TINDAKAN || 'Tindakan') + ':';
+  var hintPic = modulMB() ? 'Nama / peranan — pisah dengan koma' : 'Nama / peranan';
 
   box.innerHTML = datalistHtml() + S.agenda.map(function(ag,a){
     return '<div class="agenda"><div class="ag-head"><span class="badge">'+(a+1)+'.0</span>'
@@ -1250,7 +1315,8 @@ function renderAgenda(){
             + 'oninput="S.agenda['+a+'].items['+b+'].teks=this.value;simpanDraf()">'+esc(it.teks)+'</textarea>'
             + '<button class="icon-btn" onclick="delItem('+a+','+b+')">✕</button></div>'
             + '<div class="item-foot"><span class="lbl">'+esc(lblTindakan)+'</span>'
-            + '<input type="text" list="dlTindakan" value="'+esc(it.tindakan)+'" '
+            + '<input type="text" list="dlTindakan" value="'+esc(it.tindakan)+'" title="'+esc(hintPic)+'" '
+            + 'placeholder="'+esc(hintPic)+'" '
             + 'oninput="S.agenda['+a+'].items['+b+'].tindakan=this.value;simpanDraf()">'
             + '<span class="spacer"></span>'
             + (adaJadual ? (it.jadual
@@ -1266,7 +1332,8 @@ function renderAgenda(){
                   + 'oninput="S.agenda['+a+'].items['+b+'].subs['+c+'].teks=this.value;simpanDraf()">'+esc(sb.teks)+'</textarea>'
                   + '<button class="icon-btn" onclick="delSub('+a+','+b+','+c+')">✕</button></div>'
                   + '<div class="item-foot"><span class="lbl">'+esc(lblTindakan)+'</span>'
-                  + '<input type="text" list="dlTindakan" value="'+esc(sb.tindakan)+'" '
+                  + '<input type="text" list="dlTindakan" value="'+esc(sb.tindakan)+'" title="'+esc(hintPic)+'" '
+                  + 'placeholder="'+esc(hintPic)+'" '
                   + 'oninput="S.agenda['+a+'].items['+b+'].subs['+c+'].tindakan=this.value;simpanDraf()">'
                   + '<span class="spacer"></span>'
                   + (adaJadual ? (sb.jadual
@@ -1617,6 +1684,255 @@ function lukisRekod(){
 }
 
 /* ==================================================================================
+   MODUL MAKLUM BALAS (pilihan — aktif bila MODUL_MAKLUM_BALAS = YA)
+   ================================================================================== */
+var MB = { idMinit:'', senarai:[] };
+
+function modulMB(){ return String(KONFIG.MODUL_MAKLUM_BALAS || '').toUpperCase() === 'YA'; }
+function mbStatusPilihan(){
+  return String(KONFIG.MB_SENARAI_STATUS || 'Telah dilaksanakan, Dalam tindakan, Belum dilaksanakan')
+    .split(',').map(function(s){ return s.trim(); }).filter(String);
+}
+function mbAdaMukaSurat(){ return ya(KONFIG.MB_PAPAR_MUKA_SURAT); }
+function mbIst(k, lalai){ return KONFIG['MB_IST_' + k] || lalai; }
+
+function togelModulMB(){
+  var on = document.getElementById('k_MODUL_MAKLUM_BALAS').value === 'YA';
+  document.getElementById('mbTetapanLanjut').style.display = on ? '' : 'none';
+}
+
+/** Isi dropdown minit dari senarai rekod. */
+function mbIsiDropdown(){
+  var sel = document.getElementById('mbMinit');
+  var pilihan = MB.idMinit;
+  sel.innerHTML = '<option value="">— Pilih minit rujukan —</option>' + REKOD.map(function(r){
+    return '<option value="'+esc(r.id)+'">'+esc(r.tajuk)+' — '+esc(r.tarikh || r.simpan)+'</option>';
+  }).join('');
+  if (pilihan) sel.value = pilihan;
+}
+function mbBuka(){
+  if (!modulMB()) return;
+  if (!REKOD.length){
+    sibuk(true);
+    srv('senaraiMinit').then(function(d){ REKOD = d || []; sibuk(false); mbIsiDropdown(); mbLukis(); })
+      .catch(ralat);
+  } else { mbIsiDropdown(); mbLukis(); }
+}
+function mbTukarMinit(){
+  MB.idMinit = document.getElementById('mbMinit').value;
+  MB.senarai = [];
+  if (!MB.idMinit){ mbLukis(); return; }
+  sibuk(true);
+  srv('senaraiMaklumBalas', MB.idMinit).then(function(d){
+    MB.senarai = d || []; sibuk(false);
+    if (!MB.senarai.length) mbJana(); else mbLukis();
+  }).catch(ralat);
+}
+function mbJana(){
+  if (!MB.idMinit){ toast('Sila pilih minit dahulu.', true); return; }
+  sibuk(true);
+  srv('janaMaklumBalas', MB.idMinit).then(function(d){
+    MB.senarai = d.senarai || []; sibuk(false); mbLukis();
+    toast(d.jumlah + ' item tindakan' + (d.baharu ? ' (' + d.baharu + ' baharu ditambah)' : ''));
+  }).catch(ralat);
+}
+function mbSet(i, medan, nilai){ MB.senarai[i][medan] = nilai; }
+function mbSimpan(){
+  if (!MB.senarai.length){ toast('Tiada item untuk disimpan.', true); return; }
+  sibuk(true);
+  srv('simpanMaklumBalas', MB.senarai).then(function(n){
+    sibuk(false); toast(n + ' baris maklum balas disimpan.');
+  }).catch(ralat);
+}
+function mbPadam(){
+  if (!MB.idMinit) return;
+  if (!confirm('Padam semua baris maklum balas bagi minit ini? Status yang telah diisi akan hilang.')) return;
+  sibuk(true);
+  srv('padamMaklumBalas', MB.idMinit, TOKEN).then(function(n){
+    MB.senarai = []; sibuk(false); mbLukis(); toast(n + ' baris dipadam.');
+  }).catch(ralat);
+}
+
+function mbLukis(){
+  var box = document.getElementById('mbKandungan');
+  var kira = document.getElementById('mbKira');
+  if (!MB.idMinit){
+    box.innerHTML = '<div class="dash">Pilih satu minit di atas untuk mula mengisi maklum balas.</div>';
+    kira.textContent = ''; return;
+  }
+  if (!MB.senarai.length){
+    box.innerHTML = '<div class="dash">Tiada item tindakan dijumpai dalam minit ini.<br>'
+      + 'Pastikan medan <b>Tindakan</b> pada agenda diisi dengan nama, bukan "Maklumat".</div>';
+    kira.textContent = ''; return;
+  }
+  var selesai = String(KONFIG.MB_STATUS_SELESAI || '').split(',')
+    .map(function(s){ return s.trim().toLowerCase(); }).filter(String);
+  var nSiap = MB.senarai.filter(function(r){
+    return selesai.indexOf(String(r.status).toLowerCase()) > -1; }).length;
+  kira.textContent = MB.senarai.length + ' item · ' + nSiap + ' selesai · '
+                   + (MB.senarai.length - nSiap) + ' belum';
+
+  var pilihan = mbStatusPilihan();
+  var adaMS = mbAdaMukaSurat();
+
+  var h = '<div class="tbl-wrap"><table class="data tbl-mb" style="min-width:'+(adaMS?960:880)+'px"><thead><tr>'
+        + (adaMS ? '<th style="cursor:default">'+esc(mbIst('MUKA_SURAT','MUKA SURAT'))+'</th>' : '')
+        + '<th style="cursor:default">'+esc(mbIst('PARA','PARA'))+'</th>'
+        + '<th style="cursor:default">'+esc(mbIst('PERKARA','PERKARA'))+'</th>'
+        + '<th style="cursor:default">'+esc(mbIst('TINDAKAN','TINDAKAN'))+'</th>'
+        + '<th style="cursor:default">Status</th>'
+        + '<th style="cursor:default">'+esc(mbIst('MAKLUM_BALAS','MAKLUM BALAS'))+'</th>'
+        + '</tr></thead><tbody>';
+
+  MB.senarai.forEach(function(r,i){
+    h += '<tr'+(r.yatim?' style="background:#fef2f2"':'')+'>'
+      + (adaMS ? '<td style="white-space:nowrap"><input type="text" value="'+esc(r.mukaSurat)+'" '
+                 + 'style="width:60px;text-align:center" oninput="mbSet('+i+',\'mukaSurat\',this.value)"></td>' : '')
+      + '<td style="white-space:nowrap"><b>'+esc(r.para)+'</b></td>'
+      + '<td class="perkara">'+esc(r.perkara)
+      + (r.yatim ? '<div class="hint" style="color:#dc2626">Perkara ini sudah tiada dalam minit.</div>' : '')
+      + '</td>'
+      + '<td style="white-space:nowrap">'+esc(r.pic)+'</td>'
+      + '<td><select onchange="mbSet('+i+',\'status\',this.value)" style="min-width:150px">'
+      +   '<option value="">— Pilih —</option>'
+      +   pilihan.map(function(s){
+            return '<option'+(r.status===s?' selected':'')+'>'+esc(s)+'</option>'; }).join('')
+      + '</select></td>'
+      + '<td><input type="text" value="'+esc(r.maklumBalas)+'" placeholder="Catatan (pilihan)" '
+      +   'style="min-width:220px" oninput="mbSet('+i+',\'maklumBalas\',this.value)"></td>'
+      + '</tr>';
+  });
+  h += '</tbody></table></div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">'
+    + '<button class="b-blue" onclick="mbSimpan()">💾 Simpan Maklum Balas</button>'
+    + '<button class="b-teal" onclick="mbJanaDok(\'doc\')">📄 Jana Dokumen (Word)</button>'
+    + '<button class="b-green" onclick="mbJanaDok(\'pdf\')">📕 Jana PDF</button>'
+    + '<button class="b-ghost" onclick="mbPratonton()">👁️ Pratonton</button>'
+    + '<span class="spacer" style="flex:1"></span>'
+    + '<button class="b-ghost" onclick="mbKeAgenda()">➡️ Salin Item Belum Selesai ke Minit Baharu</button>'
+    + (ADMIN ? '<button class="b-red" onclick="mbPadam()">🗑 Padam Senarai</button>' : '')
+    + '</div>';
+  box.innerHTML = h;
+}
+
+/** Bina dokumen maklum balas (jadual berlandskap, gabung sel untuk perkara sama). */
+function mbBuildDoc(){
+  var adaMS = mbAdaMukaSurat();
+  var r0 = MB.senarai[0] || {};
+  var h = '';
+
+  if (KONFIG.MB_KOD_DOKUMEN)
+    h += '<p style="text-align:right;font-size:9pt;margin:0 0 10pt 0">'+esc(KONFIG.MB_KOD_DOKUMEN)+'</p>';
+  h += logoHtml();
+  h += '<p style="text-align:center;font-weight:bold;font-size:12pt;margin:0 0 14pt 0">'
+     + esc(KONFIG.MB_TAJUK_DOKUMEN || 'MAKLUM BALAS MINIT MESYUARAT') + '</p>';
+
+  function row(l,v){ return v ? '<tr><td style="width:4.4cm;font-weight:bold;vertical-align:top">'+esc(l)+'</td>'
+    + '<td style="width:.5cm;vertical-align:top">:</td><td>'+esc(v)+'</td></tr>' : ''; }
+  h += '<table cellspacing="0" cellpadding="1" style="border-collapse:collapse;margin-bottom:12pt;font-size:11pt">'
+     + row('Nama Mesyuarat', r0.tajukMinit) + row('Tarikh', r0.tarikhMinit) + '</table>';
+
+  // Kumpulkan ikut para + perkara supaya sel boleh digabung
+  var kumpulan = [];
+  MB.senarai.forEach(function(r){
+    var akhir = kumpulan[kumpulan.length-1];
+    if (akhir && akhir.para === r.para && akhir.perkara === r.perkara) akhir.baris.push(r);
+    else kumpulan.push({ para:r.para, perkara:r.perkara, mukaSurat:r.mukaSurat, baris:[r] });
+  });
+
+  var td = 'border:1px solid #000;padding:3pt;vertical-align:top;font-size:10pt';
+  var th = td + ';background:#efefef;font-weight:bold;text-align:center';
+  h += '<table border="1" cellspacing="0" cellpadding="3" style="border-collapse:collapse;width:100%;'
+     + 'border:1px solid #000"><tr>'
+     + (adaMS ? '<td style="'+th+';width:2.2cm">'+esc(mbIst('MUKA_SURAT','MUKA SURAT'))+'</td>' : '')
+     + '<td style="'+th+';width:2.2cm">'+esc(mbIst('PARA','PARA'))+'</td>'
+     + '<td style="'+th+'">'+esc(mbIst('PERKARA','PERKARA'))+'</td>'
+     + '<td style="'+th+';width:4.5cm">'+esc(mbIst('TINDAKAN','TINDAKAN'))+'</td>'
+     + '<td style="'+th+';width:7cm">'+esc(mbIst('MAKLUM_BALAS','MAKLUM BALAS'))+'</td></tr>';
+
+  kumpulan.forEach(function(g){
+    g.baris.forEach(function(r,i){
+      h += '<tr>';
+      if (i === 0){
+        var span = g.baris.length > 1 ? ' rowspan="'+g.baris.length+'"' : '';
+        if (adaMS) h += '<td style="'+td+';text-align:center"'+span+'>'+esc(g.mukaSurat||'')+'</td>';
+        h += '<td style="'+td+';text-align:center"'+span+'>'+esc(g.para)+'</td>'
+           + '<td style="'+td+'"'+span+'>'+nl(g.perkara)+'</td>';
+      }
+      h += '<td style="'+td+'">'+esc(r.pic)+'</td>'
+         + '<td style="'+td+'">'+nl(r.maklumBalas ? (r.status ? r.status + ' — ' + r.maklumBalas : r.maklumBalas)
+                                                  : (r.status || ''))+'</td></tr>';
+    });
+  });
+  h += '</table>';
+  return h;
+}
+function mbDocPenuh(){
+  return '<html xmlns:o="urn:schemas-microsoft-com:office:office" '
+    + 'xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'
+    + '<head><meta charset="utf-8"><title>'+esc(KONFIG.MB_TAJUK_DOKUMEN || 'Maklum Balas')+'</title>'
+    + '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->'
+    + '<style>@page WordSectionMB {size:29.7cm 21.0cm; mso-page-orientation:landscape;'
+    + ' margin:1.8cm 1.8cm 1.8cm 2.0cm;} div.WordSectionMB {page:WordSectionMB;}'
+    + 'body,p,td,table{font-family:Arial,sans-serif;font-size:10pt;line-height:1.3}'
+    + 'p{margin:0 0 6pt 0}</style></head><body><div class="WordSectionMB">'
+    + mbBuildDoc() + '</div></body></html>';
+}
+function mbNamaFail(){
+  var r0 = MB.senarai[0] || {};
+  return ('Maklum Balas - ' + (r0.tajukMinit || MB.idMinit))
+    .replace(/[\\/:*?"<>|]/g,'').trim().substring(0,80);
+}
+function mbPratonton(){
+  document.getElementById('prevBody').innerHTML = mbBuildDoc();
+  bukaModal('mPrev');
+}
+function mbJanaDok(jenis){
+  if (!MB.senarai.length){ toast('Tiada item untuk dijana.', true); return; }
+  sibuk(true);
+  srv('simpanMaklumBalas', MB.senarai).then(function(){
+    return srv('simpanDokumen', '', mbNamaFail(), mbDocPenuh(), jenis);
+  }).then(function(d){
+    sibuk(false);
+    toast('Dokumen maklum balas siap disimpan ke Drive.');
+    window.open(jenis === 'pdf' ? d.url : d.muatTurun, '_blank');
+  }).catch(ralat);
+}
+
+/** Salin item belum selesai jadi agenda "Perkara Berbangkit" dalam minit baharu. */
+function mbKeAgenda(){
+  var selesai = String(KONFIG.MB_STATUS_SELESAI || '').split(',')
+    .map(function(s){ return s.trim().toLowerCase(); }).filter(String);
+  var belum = MB.senarai.filter(function(r){
+    return !r.yatim && selesai.indexOf(String(r.status).toLowerCase()) === -1; });
+  if (!belum.length){ toast('Semua item sudah selesai — tiada yang perlu dibawa ke hadapan.'); return; }
+  if (!confirm(belum.length + ' item belum selesai akan dimasukkan sebagai agenda "Perkara Berbangkit" '
+      + 'dalam minit baharu. Teruskan?')) return;
+
+  // Gabungkan PIC bagi perkara yang sama
+  var peta = {}, susunan = [];
+  belum.forEach(function(r){
+    var kunci = r.para + '|' + r.perkara;
+    if (!peta[kunci]){ peta[kunci] = { perkara:r.perkara, para:r.para, pic:[] }; susunan.push(kunci); }
+    if (peta[kunci].pic.indexOf(r.pic) === -1) peta[kunci].pic.push(r.pic);
+  });
+
+  var tajukLama = (MB.senarai[0] || {}).tajukMinit || '';
+  S = kosong(); isiLalai();
+  S.agenda.push({
+    id: nid(),
+    tajuk: 'PERKARA BERBANGKIT' + (tajukLama ? ' — ' + tajukLama : ''),
+    items: susunan.map(function(k){
+      var g = peta[k];
+      return { id:nid(), teks:'(Para ' + g.para + ') ' + g.perkara,
+               tindakan:g.pic.join(', '), jadual:null, subs:[] };
+    })
+  });
+  renderAll(); simpanDraf(); tukarView('penjana');
+  toast(susunan.length + ' perkara dibawa ke minit baharu.');
+}
+
+/* ==================================================================================
    DASHBOARD
    ================================================================================== */
 function muatStatistik(){
@@ -1630,9 +1946,19 @@ function lukisDash(d){
     ['7 Hari Lepas', d.mingguIni, 'minggu semasa'],
     ['Jumlah Agenda', d.agenda, 'perkara dibincang']
   ];
-  document.getElementById('statCards').innerHTML = kad.map(function(k){
-    return '<div class="stat"><div class="lb">'+k[0]+'</div><div class="vl">'+k[1]+'</div>'
-      + '<div class="sb">'+k[2]+'</div></div>'; }).join('');
+  function lukisKad(senarai){
+    document.getElementById('statCards').innerHTML = senarai.map(function(k){
+      return '<div class="stat"><div class="lb">'+k[0]+'</div><div class="vl">'+k[1]+'</div>'
+        + '<div class="sb">'+k[2]+'</div></div>'; }).join('');
+  }
+  lukisKad(kad);
+  if (modulMB()){
+    srv('statistikMaklumBalas').then(function(m){
+      if (!m || !m.aktif) return;
+      lukisKad(kad.concat([['Tindakan Selesai', m.selesai, 'daripada ' + m.jumlah + ' item'],
+                           ['Tindakan Belum Selesai', m.belum, 'perlu susulan']]));
+    }).catch(function(){ /* abaikan — dashboard utama tetap terpapar */ });
+  }
   lukisCarta(d.bulanan || []);
 
   document.getElementById('topPengerusi').innerHTML = (d.pengerusi && d.pengerusi.length)
@@ -1695,6 +2021,9 @@ var KUNCI_TETAPAN = ['NAMA_ORGANISASI','ALAMAT_ORGANISASI','JENIS_ORGANISASI',
   'NO_KELUARAN','TARIKH_KELUARAN','NO_PINDAAN','TARIKH_PINDAAN','TARIKH_KUATKUASA',
   'PAPAR_KAWALAN_DOKUMEN','BENARKAN_JADUAL','BENARKAN_SUB_PERKARA','BENARKAN_TIDAK_HADIR',
   'JADUAL_BARIS_LALAI','JADUAL_LAJUR_LALAI',
+  'MODUL_MAKLUM_BALAS','MB_TAJUK_DOKUMEN','MB_KOD_DOKUMEN','MB_SENARAI_STATUS','MB_STATUS_SELESAI',
+  'MB_PAPAR_MUKA_SURAT','MB_ABAI_TINDAKAN','MB_IST_PERKARA','MB_IST_TINDAKAN','MB_IST_MAKLUM_BALAS',
+  'MB_IST_MUKA_SURAT','MB_IST_PARA',
   'IST_TARIKH','IST_MASA','IST_TEMPAT','IST_PENGERUSI','IST_TAJUK_KEHADIRAN','IST_HADIR',
   'IST_TIDAK_HADIR','IST_TAJUK_AGENDA','IST_TINDAKAN','IST_PENANGGUHAN','IST_SEDIA','IST_SAH',
   'SENARAI_TINDAKAN',
@@ -1710,6 +2039,7 @@ function isiTetapan(){
   });
   document.getElementById('k_PIN_ADMIN').value = '';
   document.getElementById('macroSemasa').value = macro() || '(belum ditetapkan)';
+  togelModulMB();
   pratontonLogoTetapan(); lukisSetup(); renderAhli();
 }
 function lukisSetup(){
