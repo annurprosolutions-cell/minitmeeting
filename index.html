@@ -21,8 +21,8 @@
    Kedua-duanya mesti sepadan, jika tidak sambungan akan ditolak.
    ══════════════════════════════════════════════════════════════════════════════════ */
 
-   var MACRO_URL = "https://script.google.com/macros/s/AKfycbwtNAD_Y0mPUk8CUgxVMSgkpY4ET7_ql_AwUiYJbEw8Ey9EEU3th3QpO07LMGpOwAPJ/exec";
-   var KUNCI_API = "minit";
+   var MACRO_URL = "https://script.google.com/macros/s/AKfycbwSHv9Z5wjMv_Aheo5Q-H5heJPP0ErnYyubLeLG4qNm8lLYVaLs8aOQMdmw1WyrTkAAbg/exec";
+   var KUNCI_API = "MM-796A6C75FDCA40B7";
 
 /* ══════════════════════════════════════════════════════════════════════════════════
    ⬆⬆⬆  SETAKAT SINI SAHAJA  ⬆⬆⬆
@@ -988,7 +988,7 @@ function siapkanWizard(){
 
   sibuk(true);
   srv('simpanKonfigurasi', data, TOKEN).then(function(k){
-    KONFIG = k; sibuk(false);
+    KONFIG = k; sibuk(false); lupakanCacheBoot();
     document.getElementById('wizard').classList.remove('on');
     S = kosong(); isiLalai(); renderAll(); pakaiJenama(); simpanDraf();
     toast('Persediaan selesai. Sistem sedia digunakan.');
@@ -1053,6 +1053,33 @@ function tandaAdmin(){
 /* ==================================================================================
    MUAT DATA AWAL
    ================================================================================== */
+/* ----------------------------------------------------------------------------------
+   PRESTASI — "papar dahulu, segarkan kemudian".
+   Muatan terakhir disimpan dalam sessionStorage. Bila aplikasi dibuka semula, antara
+   muka terus terpapar dengan tetapan tersimpan (serta-merta) sementara data terkini
+   diambil di latar belakang. Pengguna tidak lagi menunggu skrin kosong.
+   ---------------------------------------------------------------------------------- */
+var KUNCI_CACHE_BOOT = 'minit_boot_v6';
+
+function simpanCacheBoot(d){
+  try { sessionStorage.setItem(KUNCI_CACHE_BOOT, JSON.stringify(d)); } catch(e){}
+}
+function ambilCacheBoot(){
+  try { var r = sessionStorage.getItem(KUNCI_CACHE_BOOT); return r ? JSON.parse(r) : null; }
+  catch(e){ return null; }
+}
+
+function pakaiDataBoot(d){
+  KONFIG = d.konfig || {}; KONFIG._emel = d.emel; KONFIG.__versi = d.versi;
+  AHLI = d.ahli || []; ADMIN = !!d.admin; window.SETUP = d.setup || [];
+  if (d.senarai) REKOD = d.senarai;          // senarai rekod datang sekali dengan bootstrap
+  pakaiJenama();
+  PER_HALAMAN = Number(KONFIG.REKOD_SEHALAMAN) || 10;
+  tandaAdmin();
+  if (!S.id && !S.mesy.tajuk) isiLalai();
+  renderAll();
+}
+
 function muatBootstrap(){
   if (!macro()){
     document.getElementById('gate').classList.add('on');
@@ -1060,20 +1087,25 @@ function muatBootstrap(){
     document.getElementById('chipUser').textContent = '⚠️ Tiada sambungan';
     renderAll(); return;
   }
-  sibuk(true);
-  srv('bootstrap', TOKEN).then(function(d){
-    KONFIG = d.konfig || {}; KONFIG._emel = d.emel; KONFIG.__versi = d.versi;
-    AHLI = d.ahli || []; ADMIN = !!d.admin; window.SETUP = d.setup || [];
-    pakaiJenama();
-    PER_HALAMAN = Number(KONFIG.REKOD_SEHALAMAN) || 10;
-    tandaAdmin();
-    if (!S.id && !S.mesy.tajuk) isiLalai();
-    renderAll(); sibuk(false);
+
+  // 1) Papar serta-merta dari cache sesi jika ada
+  var cache = ambilCacheBoot();
+  if (cache) pakaiDataBoot(cache);
+  else sibuk(true);                            // skrin tunggu hanya pada muatan pertama
+
+  // 2) Ambil data terkini di latar belakang
+  srv('bootstrapPenuh', TOKEN).then(function(d){
+    pakaiDataBoot(d);
+    simpanCacheBoot(d);
+    sibuk(false);
     if (ADMIN && String(KONFIG.SETUP_SELESAI).toUpperCase() !== 'YA') bukaWizard();
   }).catch(function(e){
-    sibuk(false); renderAll();
-    document.getElementById('chipUser').className = 'chip off';
-    document.getElementById('chipUser').textContent = '⚠️ Tiada sambungan';
+    sibuk(false);
+    if (!cache){
+      renderAll();
+      document.getElementById('chipUser').className = 'chip off';
+      document.getElementById('chipUser').textContent = '⚠️ Tiada sambungan';
+    }
     toast(e.message, true);
   });
 }
@@ -2087,12 +2119,17 @@ function lukisSetup(){
 }
 function jalankanSetup(){
   sibuk(true);
-  srv('bootstrap', TOKEN).then(function(d){
-    window.SETUP = d.setup || []; KONFIG = d.konfig || {}; KONFIG._emel = d.emel; KONFIG.__versi = d.versi;
-    AHLI = d.ahli || []; sibuk(false); isiTetapan(); pakaiJenama();
-    toast('Setup disemak. Semua tab dan header sedia.');
+  lupakanCacheBoot();
+  srv('bootstrapPenuh', TOKEN, true).then(function(d){      // true = paksa setup penuh
+    pakaiDataBoot(d); simpanCacheBoot(d);
+    sibuk(false); isiTetapan();
+    toast('Setup penuh dijalankan. Semua tab dan header sedia.');
   }).catch(ralat);
 }
+function lupakanCacheBoot(){
+  try { sessionStorage.removeItem(KUNCI_CACHE_BOOT); } catch(e){}
+}
+
 function simpanTetapan(){
   var data = {};
   KUNCI_TETAPAN.forEach(function(k){
@@ -2110,6 +2147,7 @@ function simpanTetapan(){
     sibuk(false); pakaiJenama();
     PER_HALAMAN = Number(KONFIG.REKOD_SEHALAMAN) || 10;
     if (!S.id){ isiLalai(); renderAll(); }
+    lupakanCacheBoot();
     toast('Tetapan disimpan.');
   }).catch(ralat);
 }
@@ -2233,3 +2271,4 @@ muatBootstrap();
 </script>
 </body>
 </html>
+
