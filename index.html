@@ -609,8 +609,12 @@
       <div class="field"><label>Pautan Imej Logo</label>
         <input type="text" id="k_LOGO_URL" placeholder="https://... atau pautan kongsi Google Drive"
                oninput="pratontonLogoTetapan()">
-        <p class="hint" style="margin-top:6px">Pautan kongsi Google Drive ditukar automatik. Pastikan
-          fail dikongsi sebagai <b>"Anyone with the link"</b> supaya Microsoft Word boleh memaparkannya.</p></div>
+        <p class="hint" style="margin-top:6px"><b>Cara 1 — Pautan imej terus:</b> postimage.org, imgur, atau
+          mana-mana hosting imej. Tampal pautan, guna terus.<br>
+          <b>Cara 2 — Pautan kongsi Google Drive:</b> tampal pautan "Share" dari Drive, sistem tukar automatik
+          ke format <code>lh3.googleusercontent.com</code> (lebih stabil untuk Word/PDF berbanding pautan
+          Drive biasa). Pastikan fail dikongsi sebagai <b>"Anyone with the link"</b> supaya ia boleh
+          dipaparkan oleh sesiapa sahaja.</p></div>
       <div class="grid3">
         <div class="field"><label>Tinggi Logo (piksel)</label><input type="text" id="k_LOGO_TINGGI" placeholder="70"></div>
         <div class="field"><label>Kedudukan Dalam Dokumen</label>
@@ -1170,10 +1174,15 @@ function isiLalai(){
 function normalLogo(url){
   url = String(url||'').trim();
   if (!url) return '';
+  // Method 1: pautan imej terus (contoh: postimage, imgur, Google Sites CDN, dsb) — guna terus, tiada tukaran.
+  if (url.indexOf('drive.google.com') === -1) return url;
+  // Method 2: pautan kongsi Google Drive — tukar automatik ke format lh3.googleusercontent.com.
+  // Format ni lebih boleh dipercayai untuk dibenamkan dalam Word/PDF berbanding drive.google.com/uc?export=view,
+  // yang kerap disekat Google (halaman amaran virus-scan / "terlalu banyak permintaan").
   var m = url.match(/drive\.google\.com\/file\/d\/([^\/?]+)/) ||
           url.match(/drive\.google\.com\/open\?id=([^&]+)/) ||
           url.match(/[?&]id=([^&]+)/);
-  if (m && url.indexOf('drive.google.com') > -1) return 'https://drive.google.com/uc?export=view&id=' + m[1];
+  if (m) return 'https://lh3.googleusercontent.com/d/' + m[1];
   return url;
 }
 /** Tarik semula logo & footer dari Tetapan ke dalam rekod minit yang sedang dibuka. */
@@ -2271,4 +2280,3 @@ muatBootstrap();
 </script>
 </body>
 </html>
-
